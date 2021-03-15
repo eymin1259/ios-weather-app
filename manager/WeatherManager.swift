@@ -59,7 +59,7 @@ struct WeatherManager {
     
     func fetchWeather(latitude: Double, longitude:Double, completion: @escaping (Result<WeatherModel, Error>) -> Void) {
         
-        let path = "http://api.openweathermap.org/data/2.5/weather?lat=%f&lon=%f&appid=%@"
+        let path = "http://api.openweathermap.org/data/2.5/weather?lat=%f&lon=%f&appid=%@&units=metric"
         let urlString = String(format: path, latitude, longitude ,API_KEY)
         
         AF.request(urlString).validate().responseDecodable(of: WeatherData.self, queue: .main, decoder: JSONDecoder()) {(response) in

@@ -8,5 +8,6 @@ target 'MVC-weather-app' do
   # Pods for MVC-weather-app
   pod 'SkeletonView'
   pod 'Alamofire'
+  pod 'Loaf'
 
 end

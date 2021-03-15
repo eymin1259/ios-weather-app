@@ -8,6 +8,7 @@
 import UIKit
 import SkeletonView
 import CoreLocation
+import Loaf
 
 protocol WeatherViewControllerDelegate : class{
     func didUpdateWeatherFromSearch(model: WeatherModel)
@@ -29,53 +30,63 @@ class WeatherViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        fetchweather(city: "paris")
         
-        print("@ 1 ")
-        showAnimation()
-        print("@ 4")
-        fetchweather()
-        print("@ 7")
     }
     
-    private func fetchweather() {
-        print("@ 5")
-        weatherManager.fetchWeather(city: "singapore") { (result) in
-            print("@ 8")
-            switch result {
-            case .success(let weathermodel):
-//                print(weatherdata.name )
-                self.updateView(with: weathermodel)
-                
-            case .failure(let error):
-                print(error.localizedDescription)
-            }
+    private func fetchWeather(location: CLLocation){
+        showAnimation()
+        let latitude = location.coordinate.latitude   // 위도
+        let longitude = location.coordinate.longitude // 경도
+        weatherManager.fetchWeather(latitude: latitude, longitude: longitude) { (result) in
+            self.handleFetchResult(result: result)
         }
-        print("@ 6")
+    }
+    
+    private func fetchweather(city: String) {
+        showAnimation()
+        weatherManager.fetchWeather(city: city) { (result) in
+            self.handleFetchResult(result: result)
+        }
+    }
+    
+    private func handleFetchResult(result: Result<WeatherModel,Error> ) {
+        switch result {
+        case .success(let weathermodel):
+            updateView(with: weathermodel)
+        case .failure(let error):
+            handleError(error: error)
+        }
+    }
+    
+    private func handleError(error: Error){
+        conditionImageView.hideSkeleton()
+        conditionImageView.image = UIImage(named: "imSad")
+        temperatureLabel.hideSkeleton()
+        temperatureLabel.text = "Ooops"
+        conditionLabel.hideSkeleton()
+        conditionLabel.text = "Something went wrong. Please try again"
+        navigationItem.title = ""
+        Loaf(error.localizedDescription, state: .error, location: .top, sender: self).show()
     }
     
     private func updateView(with data: WeatherModel) {
-        print("@ 9")
         conditionImageView.hideSkeleton()
         conditionImageView.image = UIImage(named: data.conditionImage)
-        
         temperatureLabel.hideSkeleton()
         temperatureLabel.text = data.temp.toString().appending("°C")
-        
         conditionLabel.hideSkeleton()
         conditionLabel.text = data.conditionDescription
-        
-        
         navigationItem.title = data.countryName
-        print("@ 10")
+        
     }
     
     private func showAnimation(){
-        print("@ 2")
+        
         conditionImageView.showAnimatedGradientSkeleton()
         temperatureLabel.showAnimatedGradientSkeleton()
         conditionLabel.showAnimatedGradientSkeleton()
-        print("@ 3")
+        
     }
     
     @IBAction func locationBtnTab(_ sender: Any) {
@@ -132,26 +143,11 @@ extension WeatherViewController: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let location = locations.last {
             manager.stopUpdatingLocation()
-            let latitude = location.coordinate.latitude   // 위도
-            let longitude = location.coordinate.longitude // 경도
-            
-            weatherManager.fetchWeather(latitude: latitude, longitude: longitude) { (result) in
-                switch result {
-                case .success(let weathermodel):
-//                    DispatchQueue.main.async {
-//                        self.updateView(with: weathermodel)
-//                    }
-                    self.updateView(with: weathermodel)
-                case .failure(let error):
-                    print(error.localizedDescription)
-
-                    
-                }
-            }
+            self.fetchWeather(location: location)
         }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("location error : \(error.localizedDescription)")
+        handleError(error: error)
     }
 }
